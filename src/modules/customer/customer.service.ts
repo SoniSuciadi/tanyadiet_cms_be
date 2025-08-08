@@ -18,7 +18,7 @@ export class CustomerService {
         `(name ILIKE '%$<search:value>%' OR phone_number ILIKE '%$<search:value>%' OR email ILIKE '%$<search:value>%')`,
       );
     }
-    if (status) {
+    if (status && status != 'all') {
       whereQuery.push(
         `CASE 
         WHEN session_end IS NULL OR session_end < NOW() THEN 'expired'
@@ -55,6 +55,26 @@ export class CustomerService {
       rowsPerPage,
       search,
     });
+    return data;
+  }
+  async customerDetail(id: string): Promise<CustomerList | null> {
+    const data = await this.databaseService.db.oneOrNone<CustomerList>(
+      `SELECT 
+        id,
+        name,
+        email,
+        phone_number AS phone,
+        created_at AS "registrationDate",
+        session_end AS "remainingSessions",
+        CASE 
+            WHEN session_end IS NULL OR session_end < NOW() THEN 'expired'
+            WHEN session_end >= NOW() AND session_end <= NOW() + INTERVAL '3 days' THEN 'low'
+            WHEN session_end > NOW() + INTERVAL '3 days' THEN 'active'
+        END AS status
+    FROM users
+    where id = $<id>`,
+      { id },
+    );
     return data;
   }
 }

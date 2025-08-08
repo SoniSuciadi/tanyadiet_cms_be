@@ -9,7 +9,5 @@ export const genRefreshToken = (payload: TokenPayload) => {
 };
 
 export const genAccessToken = (payload: TokenPayload) => {
-  return jwt.sign(payload, process.env.JWT_SECRET_KEY!, {
-    expiresIn: '1h',
-  });
+  return jwt.sign(payload, process.env.JWT_SECRET_KEY!, {});
 };

@@ -12,6 +12,7 @@ import { ClassOrderModule } from './modules/class-order/class-order.module';
 import { CustomerModule } from './modules/customer/customer.module';
 import { DocumentModule } from './modules/document/document.module';
 import { OrderModule } from './modules/order/order.module';
+import { StorageModule } from './modules/storage/storage.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { OrderModule } from './modules/order/order.module';
     CustomerModule,
     DocumentModule,
     OrderModule,
+    StorageModule,
   ],
   providers: [
     {

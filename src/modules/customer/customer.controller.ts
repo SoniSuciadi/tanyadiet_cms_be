@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Query } from '@nestjs/common';
 import { CustomerQueries } from './customer.dto';
 import { CustomerService } from './customer.service';
 
@@ -17,6 +17,14 @@ export class CustomerController {
     return {
       message: 'Berhasil mengambil data customer',
       data: objResult,
+    };
+  }
+  @Get('/:id')
+  async getCustomerDetail(@Param('id') id: string) {
+    const data = await this.customerService.customerDetail(id);
+    return {
+      message: 'Berhasil mengambil data customer',
+      data,
     };
   }
 }
