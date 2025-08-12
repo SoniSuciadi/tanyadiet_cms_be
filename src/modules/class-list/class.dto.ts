@@ -9,7 +9,11 @@ import {
 import { GetDataQueryDto } from 'src/dto/queriesList.dto';
 import { UploadResult } from '../storage/storage.dto';
 
-export class ClassQueries extends GetDataQueryDto {}
+export class ClassQueries extends GetDataQueryDto {
+  @IsOptional()
+  @IsString()
+  status?: string;
+}
 
 class SpeakerDto {
   @IsString()

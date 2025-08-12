@@ -19,7 +19,9 @@ export class ClassListService {
     if (search) {
       whereQuery.push(`(c.title ILIKE '%$<search:value>%' )`);
     }
-
+    if (queries.status && queries.status !== 'all') {
+      whereQuery.push(`c.status = $<status>`);
+    }
     let q = `
         SELECT
         COUNT(*) OVER () AS count,

@@ -1,8 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
-  Patch,
+  Param,
   Post,
   Query,
   UploadedFile,
@@ -22,10 +23,6 @@ export class DocumentController {
 
   @Get('')
   async listDocument(@Query() documentQueries: DocumentQueries) {
-    console.log(
-      '👻 ~ DocumentController ~ listDocument ~ documentQueries:',
-      documentQueries,
-    );
     const data = await this.documentService.listDocument(documentQueries);
     const objResult = {
       totalItems: +data?.[0]?.count,
@@ -39,7 +36,13 @@ export class DocumentController {
     };
   }
   @Get(':id')
-  async detailDocument() {}
+  async detailDocument(@Param('id') id: string) {
+    const data = await this.documentService.detailDocument(id);
+    return {
+      message: 'Berhasil mengambil detail document',
+      data,
+    };
+  }
   @Post('')
   @UseInterceptors(FileInterceptor('document'))
   async createDocument(
@@ -56,6 +59,12 @@ export class DocumentController {
     return this.documentService.createDocument(body);
   }
 
-  @Patch(':id')
-  async editDocument() {}
+  @Delete(':id')
+  async deleteDocument(@Param('id') id: string) {
+    console.log('👻 ~ DocumentController ~ deleteDocument ~ id:', id);
+    await this.documentService.deleteDocument(id);
+    return {
+      message: 'Berhasil menghapus document',
+    };
+  }
 }

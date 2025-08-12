@@ -2,10 +2,14 @@ import { Injectable } from '@nestjs/common';
 import { CreateDocumentDto, DocumentQueries } from './document.dto';
 import { DatabaseService } from 'src/common/database/database.service';
 import { Document } from './document.response.dto';
+import { UserService } from '../user/user.service';
 
 @Injectable()
 export class DocumentService {
-  constructor(private readonly databaseService: DatabaseService) {}
+  constructor(
+    private readonly databaseService: DatabaseService,
+    private readonly userService: UserService,
+  ) {}
   async listDocument(queries: DocumentQueries) {
     const { order, search, page = 1, orderBy, rowsPerPage } = queries;
 
@@ -53,10 +57,33 @@ export class DocumentService {
     });
     return data?.id || '';
   }
-  //   async detailDocument(id: string) {
-  //     // Implementation for getting document details
-  //   }
-  //   async editDocument(id: string, body: CreateDocumentDto) {
-  //     // Implementation for editing a document
-  //   }
+  async detailDocument(id: string) {
+    const data = await this.databaseService.db.oneOrNone(
+      `
+        SELECT
+            title,
+            description,
+            type,
+            link,
+            document,
+            created_at AS "uploadDate",
+            created_by AS "uploadBy"
+        FROM
+            documents
+        WHERE id = $<id>
+        `,
+      { id },
+    );
+    return data || null;
+  }
+  async deleteDocument(id: string) {
+    await this.databaseService.updateOne<{ id: string }>({
+      table: 'documents',
+      data: {
+        deleted_at: new Date(),
+        deleted_by: this.userService.get().id,
+      },
+      where: { id },
+    });
+  }
 }
