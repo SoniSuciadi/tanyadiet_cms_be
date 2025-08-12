@@ -61,7 +61,6 @@ export class DocumentController {
 
   @Delete(':id')
   async deleteDocument(@Param('id') id: string) {
-    console.log('👻 ~ DocumentController ~ deleteDocument ~ id:', id);
     await this.documentService.deleteDocument(id);
     return {
       message: 'Berhasil menghapus document',

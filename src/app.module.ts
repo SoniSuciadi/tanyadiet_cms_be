@@ -13,6 +13,7 @@ import { CustomerModule } from './modules/customer/customer.module';
 import { DocumentModule } from './modules/document/document.module';
 import { OrderModule } from './modules/order/order.module';
 import { StorageModule } from './modules/storage/storage.module';
+import { AiAgentModule } from './modules/aiagent/aiagent.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { StorageModule } from './modules/storage/storage.module';
     DocumentModule,
     OrderModule,
     StorageModule,
+    AiAgentModule,
   ],
   providers: [
     {

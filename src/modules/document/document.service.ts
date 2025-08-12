@@ -3,12 +3,14 @@ import { CreateDocumentDto, DocumentQueries } from './document.dto';
 import { DatabaseService } from 'src/common/database/database.service';
 import { Document } from './document.response.dto';
 import { UserService } from '../user/user.service';
+import { AiAgentService } from '../aiagent/aiagent.service';
 
 @Injectable()
 export class DocumentService {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly userService: UserService,
+    private readonly aiAgentService: AiAgentService,
   ) {}
   async listDocument(queries: DocumentQueries) {
     const { order, search, page = 1, orderBy, rowsPerPage } = queries;
@@ -18,6 +20,9 @@ export class DocumentService {
     const whereQuery: string[] = [`WHERE deleted_at IS NULL`];
     if (search) {
       whereQuery.push(`(title ILIKE '%$<search:value>%' )`);
+    }
+    if (queries.status && queries.status !== 'all') {
+      whereQuery.push(`type = $<type>`);
     }
 
     let q = `
@@ -42,6 +47,7 @@ export class DocumentService {
       orderBy,
       rowsPerPage,
       search,
+      type: queries.status,
     });
     return data;
   }
@@ -55,6 +61,7 @@ export class DocumentService {
       },
       returning: ['id'],
     });
+    await this.aiAgentService.sendKnowledge(body, data?.id);
     return data?.id || '';
   }
   async detailDocument(id: string) {
@@ -77,13 +84,17 @@ export class DocumentService {
     return data || null;
   }
   async deleteDocument(id: string) {
-    await this.databaseService.updateOne<{ id: string }>({
-      table: 'documents',
-      data: {
-        deleted_at: new Date(),
-        deleted_by: this.userService.get().id,
-      },
-      where: { id },
+    await this.databaseService.db.tx(async (t) => {
+      await this.databaseService.updateOne<{ id: string }>({
+        table: 'documents',
+        data: {
+          deleted_at: new Date(),
+          deleted_by: this.userService.get().id,
+        },
+        where: { id },
+        transaction: t,
+      });
+      await this.aiAgentService.deleteKnowledge(id);
     });
   }
 }
