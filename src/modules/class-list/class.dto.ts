@@ -46,6 +46,14 @@ export class CreateClassDto {
   @IsNotEmpty()
   status: string;
 
+  @IsString()
+  @IsNotEmpty()
+  date: string;
+
+  @IsString()
+  @IsNotEmpty()
+  time: string;
+
   @IsOptional()
   banner?: UploadResult;
 }

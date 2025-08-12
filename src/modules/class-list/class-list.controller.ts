@@ -1,8 +1,10 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   Param,
+  Patch,
   Post,
   Query,
   UploadedFile,
@@ -48,8 +50,41 @@ export class ClassListController {
     }
     const data = await this.classListService.addClass(body);
     return {
-      message: 'Berhasil mengambil data class',
+      message: 'Berhasil menambah data class',
       data,
+    };
+  }
+  @Patch(':id')
+  @UseInterceptors(FileInterceptor('banner'))
+  async updateClass(
+    @UploadedFile() banner: Express.Multer.File,
+    @Body() body: CreateClassDto,
+    @Param('id') id: string,
+  ) {
+    if (banner) {
+      const uploadFile = await this.storageService.uploadFile(
+        banner,
+        `class/${body.title}`,
+      );
+      body.banner = uploadFile;
+    }
+
+    await this.classListService.updateClass(body, id);
+    return {
+      message: 'Berhasil mengubah data class',
+      data: {
+        id,
+      },
+    };
+  }
+  @Delete(':id')
+  async deleteClass(@Param('id') id: string) {
+    await this.classListService.updateStatus('deleted', id);
+    return {
+      message: 'Berhasil menghapus data class',
+      data: {
+        id,
+      },
     };
   }
   @Get(':id')
