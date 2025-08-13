@@ -19,7 +19,17 @@ export class OrderService {
       );
     }
     if (status && status != 'all') {
-      whereQuery.push(`o.payment_status = $<status>`);
+      if (status == 'expired') {
+        whereQuery.push(
+          `o.payment_status = 'pending' AND o.created_at < NOW() - INTERVAL '1 day'`,
+        );
+      } else if (status == 'pending') {
+        whereQuery.push(
+          `o.payment_status = 'pending' AND o.created_at > NOW() - INTERVAL '1 day'`,
+        );
+      } else {
+        whereQuery.push(`o.payment_status = $<status>`);
+      }
     }
 
     let q = `
@@ -29,6 +39,7 @@ export class OrderService {
            p.name AS "packageName",
            s.name AS "customerName",
            o.amount,
+           o.created_at AS "createdAt",
            o.payment_url AS "paymentUrl",
            o.payment_status AS "status",
            o.paid_date AS "paymentDate"

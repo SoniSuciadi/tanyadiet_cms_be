@@ -45,6 +45,7 @@ export class ClassListService {
       orderBy,
       rowsPerPage,
       search,
+      status: queries.status,
     });
     return data;
   }
