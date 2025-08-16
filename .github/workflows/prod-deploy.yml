@@ -50,6 +50,6 @@ jobs:
       - name: Deploy App to CapRover
         uses: caprover/deploy-from-github@main
         with:
-          server: 'https://captain.zenika.id'
-          app: 'td-bo-be'
-          token: '${{ secrets.CAPROVER_TOKEN }}'
+          server: 'https://captain.this.prod.zenika.id'
+          app: 'server-admin-tanya-diet'
+          token: '${{ secrets.CAPROVER_PRODUCTION_TOKEN }}'
