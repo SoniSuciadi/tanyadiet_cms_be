@@ -52,7 +52,7 @@ export class DocumentController {
     if (document) {
       const uploadFile = await this.storageService.uploadFile(
         document,
-        `documents/${body.title}`,
+        `/documents/${body.title}`,
       );
       body.document = uploadFile;
     }

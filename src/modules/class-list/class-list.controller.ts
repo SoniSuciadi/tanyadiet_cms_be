@@ -44,7 +44,7 @@ export class ClassListController {
     if (banner) {
       const uploadFile = await this.storageService.uploadFile(
         banner,
-        `class/${body.title}`,
+        `/class/${body.title}`,
       );
       body.banner = uploadFile;
     }
@@ -64,7 +64,7 @@ export class ClassListController {
     if (banner) {
       const uploadFile = await this.storageService.uploadFile(
         banner,
-        `class/${body.title}`,
+        `/class/${body.title}`,
       );
       body.banner = uploadFile;
     }

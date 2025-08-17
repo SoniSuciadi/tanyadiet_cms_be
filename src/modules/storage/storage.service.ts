@@ -76,7 +76,7 @@ export class StorageService {
       type: mimetype,
     });
     formFile.append('file', fileBlob, file.originalname);
-    formFile.append('path', customPath);
+    formFile.append('path', `${process.env.STORAGE_BASE_DIR}${customPath}`);
 
     // ===== UPLOAD =====
     const [fileResp, thumbResp] = await Promise.all([
