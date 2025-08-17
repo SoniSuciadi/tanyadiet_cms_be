@@ -43,7 +43,10 @@ export class StorageService {
 
     // ===== THUMBNAIL =====
     const formThumbnail = new FormData();
-    formThumbnail.append('path', customPath);
+    formThumbnail.append(
+      'path',
+      `${process.env.STORAGE_BASE_DIR}${customPath}`,
+    );
 
     let thumbBuffer: Buffer;
 
