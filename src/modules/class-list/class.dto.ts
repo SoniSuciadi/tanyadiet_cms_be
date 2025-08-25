@@ -83,6 +83,10 @@ export class CreateLiveSession {
   meetingLink: string;
 
   @IsString()
+  @IsOptional()
+  recordingLink: string;
+
+  @IsString()
   @IsNotEmpty()
   duration: string;
 

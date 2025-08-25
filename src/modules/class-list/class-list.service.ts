@@ -154,10 +154,7 @@ export class ClassListService {
       returning: ['id'],
     });
   }
-  async getLiveSession(
-    id: string,
-    liveSessionId: string,
-  ): Promise<LiveSession | null> {
+  async getLiveSession(id: string): Promise<LiveSession | null> {
     const data = await this.databaseService.db.oneOrNone<LiveSession>(
       `
       SELECT
@@ -165,15 +162,15 @@ export class ClassListService {
         title,
         description,
         meeting_link AS "meetingLink",
+        recording_link AS "recordingLink",
         duration,
         key_points AS "keyPoints"
       FROM
         live_sessions
       WHERE
-        class_id = $<id> AND id = $<liveSessionId>`,
+        class_id = $<id> `,
       {
         id,
-        liveSessionId,
       },
     );
     return data;

@@ -38,6 +38,7 @@ export interface CreateLiveSession {
   title: string;
   description: string;
   meetingLink: string;
+  recordingLink: string;
   duration: string;
   keyPoints: string[];
 }

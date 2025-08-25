@@ -116,12 +116,9 @@ export class ClassListController {
       message: 'Berhasil mengubah live session',
     };
   }
-  @Get(':id/live-session/:liveSessionId')
-  async getLiveSession(
-    @Param('id') id: string,
-    @Param('liveSessionId') liveSessionId: string,
-  ) {
-    const data = await this.classListService.getLiveSession(id, liveSessionId);
+  @Get(':id/live-session')
+  async getLiveSession(@Param('id') id: string) {
+    const data = await this.classListService.getLiveSession(id);
     return {
       message: 'Berhasil mengambil live session',
       data,
