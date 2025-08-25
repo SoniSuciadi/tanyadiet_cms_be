@@ -1,27 +1,46 @@
 import { UploadResult } from '../storage/storage.dto';
+import { ClassType } from './class.dto';
 
 export interface Class {
   count: number;
   id: string;
   title: string;
+  instructor: string;
   price: number;
-  speakers: string[];
-  banner: string;
+  originalPrice: number;
+  duration: string;
+  type: ClassType;
   description: string;
-  enrolled: number;
+  students: number;
+  rating: number;
   status: string;
-  createdAt: string;
+  publishUntil: string;
 }
 
 export interface ClassDetail {
+  id?: string;
   title: string;
+  instructor: string;
+  instructorBio: string;
   price: number;
-  status: string;
-  speakers: {
-    name: string;
-  }[];
+  originalPrice: number;
+  duration: string;
+  type: ClassType;
+  category: string;
+  banner?: File | UploadResult;
   description: string;
-  material: string;
-  banner: UploadResult;
-  enrolled: number;
+  whatYouWillLearn: string[];
+  schedule: string;
+  students?: number;
+  rating?: number;
+}
+export interface CreateLiveSession {
+  title: string;
+  description: string;
+  meetingLink: string;
+  duration: string;
+  keyPoints: string[];
+}
+export interface LiveSession extends CreateLiveSession {
+  id?: string;
 }

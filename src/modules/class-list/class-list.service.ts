@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/common/database/database.service';
-import { Class, ClassDetail } from './class.response.dto';
-import { ClassQueries, CreateClassDto } from './class.dto';
+import { Class, ClassDetail, LiveSession } from './class.response.dto';
+import { ClassQueries, CreateClassDto, CreateLiveSession } from './class.dto';
 import { UserService } from '../user/user.service';
 
 @Injectable()
@@ -19,23 +19,35 @@ export class ClassListService {
     if (search) {
       whereQuery.push(`(c.title ILIKE '%$<search:value>%' )`);
     }
-    if (queries.status && queries.status !== 'all') {
-      whereQuery.push(`c.status = $<status>`);
+    if (queries.category && queries.category !== 'all') {
+      whereQuery.push(`c.category = $<category>`);
     }
+    if (queries.type && queries.type !== 'all') {
+      whereQuery.push(`c.type = $<category>`);
+    }
+
     let q = `
         SELECT
-        COUNT(*) OVER () AS count,
-        c.id,
-         c.title, 
-            c.price, 
-            c.speakers, 
-            COUNT(CASE WHEN oc.payment_status = 'settlement' THEN 1 END) AS enrolled, 
-            c.status,
-            c.created_at AS "createdAt"
-        FROM classes c
-        LEFT JOIN order_class oc ON c.id = oc.class_id
+          count(*) OVER () AS count,
+          c.id,
+          c.title,
+          c.instructor,
+          c.price,
+          c.original_price AS "originPrice",
+          c.duration,
+          c.type,
+          c.status,
+          c.description,
+          c.publish_until AS "publishUntil",
+          count(CASE WHEN oc.payment_status = 'settlement' THEN oc.id END) AS students,
+          avg(CASE WHEN oc.payment_status = 'settlement' THEN oc.rating END) AS rating
+        FROM
+          classes c
+        LEFT JOIN
+          order_class oc ON c.id = oc.class_id
         ${whereQuery.join(' AND ')}
-        GROUP BY c.id
+        GROUP BY
+          c.id
         ORDER BY $<orderBy:raw> $<order:raw>
         `;
     q += `LIMIT $<rowsPerPage> OFFSET $<offset>`;
@@ -45,7 +57,8 @@ export class ClassListService {
       orderBy,
       rowsPerPage,
       search,
-      status: queries.status,
+      category: queries.category,
+      type: queries.type,
     });
     return data;
   }
@@ -54,7 +67,6 @@ export class ClassListService {
       table: 'classes',
       data: {
         ...body,
-        speakers: JSON.stringify(body.speakers),
       },
       returning: ['id'],
     });
@@ -65,9 +77,11 @@ export class ClassListService {
       table: 'classes',
       data: {
         ...body,
-        speakers: JSON.stringify(body.speakers),
       },
-      where: { id },
+      where: {
+        id,
+      },
+      returning: ['id'],
     });
   }
   async updateStatus(status: string, id: string) {
@@ -83,29 +97,85 @@ export class ClassListService {
   }
   async getClassById(id: string): Promise<ClassDetail | null> {
     const q = `
-    SELECT 
+    SELECT
+      c.id,
       c.title,
+      c.instructor,
+      c.instructor_bio AS "instructorBio",
       c.price,
-      c.status,
-      c.speakers,
-      c.description,
-      c.material,
+      c.original_price AS "originalPrice",
+      c.duration,
+      c.type,
+      c.category,
       c.banner,
-      c.date,
-      c.time,
-      COALESCE(COUNT(CASE WHEN o.payment_status = 'settlement' THEN 1 END), 0) AS enrolled
-    FROM 
+      c.description,
+      c.what_you_will_learn AS "whatYouWillLearn",
+      c.schedule,
+      count(
+        CASE WHEN oc.payment_status = 'settlement' THEN
+          oc.id
+        END) AS students,
+      avg(
+        CASE WHEN oc.payment_status = 'settlement' THEN
+          oc.rating
+        END) AS rating
+    FROM
       classes c
-    LEFT JOIN 
-      order_class o ON c.id = o.class_id
-    WHERE 
+      LEFT JOIN order_class oc ON c.id = oc.class_id
+    WHERE
       c.id = $<id>
-    GROUP BY 
+    GROUP BY
       c.id
     `;
     const data = await this.databaseService.db.oneOrNone<ClassDetail>(q, {
       id,
     });
+    return data;
+  }
+  async createLiveSession(body: CreateLiveSession, id: string) {
+    return await this.databaseService.insertOne<{ id: string }>({
+      table: 'live_sessions',
+      data: {
+        ...body,
+        class_id: id,
+      },
+      returning: ['id'],
+    });
+  }
+  async updateLiveSession(body: CreateLiveSession, id: string) {
+    await this.databaseService.updateOne<{ id: string }>({
+      table: 'live_sessions',
+      data: {
+        ...body,
+      },
+      where: {
+        id,
+      },
+      returning: ['id'],
+    });
+  }
+  async getLiveSession(
+    id: string,
+    liveSessionId: string,
+  ): Promise<LiveSession | null> {
+    const data = await this.databaseService.db.oneOrNone<LiveSession>(
+      `
+      SELECT
+        id,
+        title,
+        description,
+        meeting_link AS "meetingLink",
+        duration,
+        key_points AS "keyPoints"
+      FROM
+        live_sessions
+      WHERE
+        class_id = $<id> AND id = $<liveSessionId>`,
+      {
+        id,
+        liveSessionId,
+      },
+    );
     return data;
   }
 }

@@ -11,7 +11,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ClassListService } from './class-list.service';
-import { ClassQueries, CreateClassDto } from './class.dto';
+import { ClassQueries, CreateClassDto, CreateLiveSession } from './class.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from '../storage/storage.service';
 
@@ -92,6 +92,38 @@ export class ClassListController {
     const data = await this.classListService.getClassById(id);
     return {
       message: 'Berhasil mengambil data class',
+      data,
+    };
+  }
+  @Post(':id/live-session')
+  async createLiveSession(
+    @Param('id') id: string,
+    @Body() body: CreateLiveSession,
+  ) {
+    const data = await this.classListService.createLiveSession(body, id);
+    return {
+      message: 'Berhasil menambahkan live session',
+      data,
+    };
+  }
+  @Patch(':id/live-session/:liveSessionId')
+  async updateLiveSession(
+    @Param('liveSessionId') liveSessionId: string,
+    @Body() body: CreateLiveSession,
+  ) {
+    await this.classListService.updateLiveSession(body, liveSessionId);
+    return {
+      message: 'Berhasil mengubah live session',
+    };
+  }
+  @Get(':id/live-session/:liveSessionId')
+  async getLiveSession(
+    @Param('id') id: string,
+    @Param('liveSessionId') liveSessionId: string,
+  ) {
+    const data = await this.classListService.getLiveSession(id, liveSessionId);
+    return {
+      message: 'Berhasil mengambil live session',
       data,
     };
   }
