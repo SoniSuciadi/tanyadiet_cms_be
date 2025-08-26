@@ -94,3 +94,28 @@ export class CreateLiveSession {
   @IsNotEmpty()
   keyPoints: string[];
 }
+
+export class CreateCourseMateri {
+  @IsString()
+  @IsNotEmpty()
+  title: string;
+
+  @IsString()
+  @IsNotEmpty()
+  classTitle: string;
+
+  @IsString()
+  @IsNotEmpty()
+  description: string;
+
+  @IsOptional()
+  videoUrl: UploadResult;
+
+  @IsString()
+  @IsNotEmpty()
+  duration: string;
+
+  @IsArray()
+  @IsNotEmpty()
+  keyPoints: string[];
+}

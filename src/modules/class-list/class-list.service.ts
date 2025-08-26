@@ -6,7 +6,12 @@ import {
   LiveSession,
   Participant,
 } from './class.response.dto';
-import { ClassQueries, CreateClassDto, CreateLiveSession } from './class.dto';
+import {
+  ClassQueries,
+  CreateClassDto,
+  CreateCourseMateri,
+  CreateLiveSession,
+} from './class.dto';
 import { UserService } from '../user/user.service';
 import { GetDataQueryDto } from 'src/dto/queriesList.dto';
 
@@ -213,6 +218,89 @@ export class ClassListService {
       id,
       rowsPerPage: queries.rowsPerPage,
       offset: offset,
+    });
+    return data;
+  }
+  async createCourseMateri(body: CreateCourseMateri, id: string) {
+    return await this.databaseService.insertOne<{ id: string }>({
+      table: 'course_material',
+      data: {
+        description: body.description,
+        duration: body.duration,
+        keyPoints: body.keyPoints,
+        title: body.title,
+        videoUrl: body.videoUrl,
+        class_id: id,
+      },
+      returning: ['id'],
+    });
+  }
+  async updateCourseMateri(body: CreateCourseMateri, id: string) {
+    await this.databaseService.updateOne<{ id: string }>({
+      table: 'course_material',
+      data: {
+        description: body.description,
+        duration: body.duration,
+        keyPoints: body.keyPoints,
+        title: body.title,
+        videoUrl: body.videoUrl,
+      },
+      where: {
+        id,
+      },
+      returning: ['id'],
+    });
+  }
+  async getClassMateri(
+    id: string,
+    queries: GetDataQueryDto,
+  ): Promise<Participant[]> {
+    const { page, rowsPerPage } = queries;
+    const offset = (page - 1) * rowsPerPage;
+
+    const whereQuery: string[] = [`WHERE deleted_at IS NULL`, 'class_id=$<id>'];
+
+    let q = `
+        SELECT
+          count(*) OVER () AS count,
+          id,
+          title,
+          description,
+          video_url AS "videoUrl",
+          duration,
+          key_points AS "keyPoints"
+        FROM
+          course_material
+        ${whereQuery.join(' AND ')}
+        ORDER BY created_at DESC
+        `;
+    q += `LIMIT $<rowsPerPage> OFFSET $<offset>`;
+    const data = await this.databaseService.db.manyOrNone<Participant>(q, {
+      id,
+      rowsPerPage: queries.rowsPerPage,
+      offset: offset,
+    });
+    return data;
+  }
+  async getClassMateriDetail(id: string): Promise<Participant | null> {
+    const whereQuery: string[] = [`WHERE deleted_at IS NULL`, 'id=$<id>'];
+
+    const q = `
+        SELECT
+          count(*) OVER () AS count,
+          id,
+          title,
+          description,
+          video_url AS "videoUrl",
+          duration,
+          key_points AS "keyPoints"
+        FROM
+          course_material
+        ${whereQuery.join(' AND ')}
+        ORDER BY created_at DESC
+        `;
+    const data = await this.databaseService.db.oneOrNone<Participant>(q, {
+      id,
     });
     return data;
   }

@@ -55,3 +55,13 @@ export interface Participant {
   avatar?: string;
   enrolledAt: string;
 }
+
+export interface Material {
+  count: number;
+  id: string;
+  title: string;
+  description: string;
+  videoUrl: UploadResult;
+  duration: string;
+  keyPoints: string[];
+}
