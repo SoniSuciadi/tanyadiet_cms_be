@@ -14,6 +14,7 @@ import { ClassListService } from './class-list.service';
 import { ClassQueries, CreateClassDto, CreateLiveSession } from './class.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from '../storage/storage.service';
+import { GetDataQueryDto } from 'src/dto/queriesList.dto';
 
 @Controller('class-list')
 export class ClassListController {
@@ -122,6 +123,23 @@ export class ClassListController {
     return {
       message: 'Berhasil mengambil live session',
       data,
+    };
+  }
+  @Get(':id/participant')
+  async getParticipant(
+    @Param('id') id: string,
+    @Query() queries: GetDataQueryDto,
+  ) {
+    const data = await this.classListService.getClassParticipant(id, queries);
+    const objResult = {
+      totalItems: +data?.[0]?.count,
+      page: +queries.page,
+      perPage: queries.rowsPerPage,
+      items: data,
+    };
+    return {
+      message: 'Berhasil mengambil participant',
+      data: objResult,
     };
   }
 }

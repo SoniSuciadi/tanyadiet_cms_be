@@ -45,3 +45,13 @@ export interface CreateLiveSession {
 export interface LiveSession extends CreateLiveSession {
   id?: string;
 }
+
+export interface Participant {
+  count: number;
+  id: string;
+  orderId: string;
+  name: string;
+  email: string;
+  avatar?: string;
+  enrolledAt: string;
+}

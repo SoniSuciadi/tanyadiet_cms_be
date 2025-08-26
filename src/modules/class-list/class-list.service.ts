@@ -1,8 +1,14 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from 'src/common/database/database.service';
-import { Class, ClassDetail, LiveSession } from './class.response.dto';
+import {
+  Class,
+  ClassDetail,
+  LiveSession,
+  Participant,
+} from './class.response.dto';
 import { ClassQueries, CreateClassDto, CreateLiveSession } from './class.dto';
 import { UserService } from '../user/user.service';
+import { GetDataQueryDto } from 'src/dto/queriesList.dto';
 
 @Injectable()
 export class ClassListService {
@@ -173,6 +179,41 @@ export class ClassListService {
         id,
       },
     );
+    return data;
+  }
+  async getClassParticipant(
+    id: string,
+    queries: GetDataQueryDto,
+  ): Promise<Participant[]> {
+    const { page, rowsPerPage } = queries;
+    const offset = (page - 1) * rowsPerPage;
+
+    const whereQuery: string[] = [
+      `WHERE oc.deleted_at IS NULL`,
+      'oc.class_id=$<id>',
+      `oc.payment_status='settlement'`,
+    ];
+
+    let q = `
+        SELECT
+          count(*) OVER () AS count,
+          oc.id,
+          oc.order_id AS "orderId",
+          u.name,
+          u.email,
+          '' AS "avatar",
+          oc.paid_date AS "enrolledAt" 
+        from order_class oc
+        left join users u ON oc.user_id = u.id
+        ${whereQuery.join(' AND ')}
+        ORDER BY oc.paid_date DESC
+        `;
+    q += `LIMIT $<rowsPerPage> OFFSET $<offset>`;
+    const data = await this.databaseService.db.manyOrNone<Participant>(q, {
+      id,
+      rowsPerPage: queries.rowsPerPage,
+      offset: offset,
+    });
     return data;
   }
 }
