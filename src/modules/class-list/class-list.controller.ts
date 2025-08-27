@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Param,
   Patch,
@@ -16,6 +15,7 @@ import {
   CreateClassDto,
   CreateCourseMateri,
   CreateLiveSession,
+  UpdateStatus,
 } from './class.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from '../storage/storage.service';
@@ -78,16 +78,6 @@ export class ClassListController {
     await this.classListService.updateClass(body, id);
     return {
       message: 'Berhasil mengubah data class',
-      data: {
-        id,
-      },
-    };
-  }
-  @Delete(':id')
-  async deleteClass(@Param('id') id: string) {
-    await this.classListService.updateStatus('deleted', id);
-    return {
-      message: 'Berhasil menghapus data class',
       data: {
         id,
       },
@@ -210,6 +200,15 @@ export class ClassListController {
 
     return {
       message: 'Berhasil mengambil detail materi',
+      data,
+    };
+  }
+
+  @Patch(':id/status')
+  async updateStatus(@Param('id') id: string, @Body() body: UpdateStatus) {
+    const data = await this.classListService.updateStatus(body, id);
+    return {
+      message: 'Berhasil mengubah status class',
       data,
     };
   }

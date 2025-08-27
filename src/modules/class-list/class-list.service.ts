@@ -12,6 +12,7 @@ import {
   CreateClassDto,
   CreateCourseMateri,
   CreateLiveSession,
+  UpdateStatus,
 } from './class.dto';
 import { UserService } from '../user/user.service';
 import { GetDataQueryDto } from 'src/dto/queriesList.dto';
@@ -102,13 +103,12 @@ export class ClassListService {
       returning: ['id'],
     });
   }
-  async updateStatus(status: string, id: string) {
+  async updateStatus(body: UpdateStatus, id: string) {
     await this.databaseService.updateOne<{ id: string }>({
       table: 'classes',
       data: {
-        status,
-        deleted_at: status === 'deleted' ? new Date() : null,
-        deleted_by: status === 'deleted' ? this.userService.get().id : null,
+        status: body.status,
+        publish_until: body.status === 'published' ? body.date : null,
       },
       where: { id },
     });
@@ -129,6 +129,8 @@ export class ClassListService {
       c.description,
       c.what_you_will_learn AS "whatYouWillLearn",
       c.schedule,
+      c.status,
+      c.publish_until AS "publishUntil",
       count(
         CASE WHEN oc.payment_status = 'settlement' THEN
           oc.id
