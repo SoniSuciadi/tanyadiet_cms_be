@@ -3,7 +3,6 @@ import { CreateDocumentDto, DocumentQueries } from './document.dto';
 import { DatabaseService } from 'src/common/database/database.service';
 import { Document } from './document.response.dto';
 import { UserService } from '../user/user.service';
-import { AiAgentService } from '../aiagent/aiagent.service';
 import pgPromise from 'pg-promise';
 import pg from 'pg-promise/typescript/pg-subset';
 
@@ -12,33 +11,34 @@ export class DocumentService {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly userService: UserService,
-    private readonly aiAgentService: AiAgentService,
   ) {}
   async listDocument(queries: DocumentQueries) {
     const { order, search, page = 1, orderBy, rowsPerPage } = queries;
 
     const offset = (page - 1) * rowsPerPage;
 
-    const whereQuery: string[] = [`WHERE deleted_at IS NULL`];
+    const whereQuery: string[] = [`WHERE d.deleted_at IS NULL`];
     if (search) {
-      whereQuery.push(`(title ILIKE '%$<search:value>%' )`);
+      whereQuery.push(`(d.title ILIKE '%$<search:value>%' )`);
     }
     if (queries.status && queries.status !== 'all') {
-      whereQuery.push(`type = $<type>`);
+      whereQuery.push(`d.type = $<type>`);
     }
 
     let q = `
           SELECT
-          COUNT(*) OVER () AS count,
-          id,
-            title,
-            description,
-            type,
-            link,
-            document,
-            updated_at AS "uploadDate"
-        FROM
-            documents
+            count(*) OVER () AS count,
+            d.id,
+            d.title,
+            d.description,
+            d.type,
+            d.link,
+            d.document,
+            d.updated_at AS "uploadDate",
+            cm.class_id AS "classId"
+          FROM
+            documents d
+          left join course_material cm ON d.id = cm.document_id
           ${whereQuery.join(' AND ')}
           ORDER BY $<orderBy:raw> $<order:raw>
           `;
@@ -57,7 +57,7 @@ export class DocumentService {
   async createDocument(
     body: CreateDocumentDto,
     tx?: pgPromise.ITask<pg.IClient> & pg.IClient,
-  ) {
+  ): Promise<string> {
     const data = await this.databaseService.insertOne<{ id: string }>({
       table: 'documents',
       data: {
@@ -67,7 +67,6 @@ export class DocumentService {
       returning: ['id'],
       transaction: tx,
     });
-    await this.aiAgentService.sendKnowledge(body, data?.id);
     return data?.id || '';
   }
   async detailDocument(id: string) {
@@ -89,18 +88,18 @@ export class DocumentService {
     );
     return data || null;
   }
-  async deleteDocument(id: string) {
-    await this.databaseService.db.tx(async (t) => {
-      await this.databaseService.updateOne<{ id: string }>({
-        table: 'documents',
-        data: {
-          deleted_at: new Date(),
-          deleted_by: this.userService.get().id,
-        },
-        where: { id },
-        transaction: t,
-      });
-      await this.aiAgentService.deleteKnowledge(id);
+  async deleteDocument(
+    id: string,
+    tx?: pgPromise.ITask<pg.IClient> & pg.IClient,
+  ) {
+    await this.databaseService.updateOne<{ id: string }>({
+      table: 'documents',
+      data: {
+        deleted_at: new Date(),
+        deleted_by: this.userService.get().id,
+      },
+      where: { id },
+      transaction: tx,
     });
   }
 }

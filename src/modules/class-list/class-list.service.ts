@@ -18,6 +18,7 @@ import { GetDataQueryDto } from 'src/dto/queriesList.dto';
 import { DocumentService } from '../document/document.service';
 import pgPromise from 'pg-promise';
 import pg from 'pg-promise/typescript/pg-subset';
+import { AiAgentService } from '../aiagent/aiagent.service';
 
 @Injectable()
 export class ClassListService {
@@ -25,6 +26,7 @@ export class ClassListService {
     private readonly databaseService: DatabaseService,
     private readonly userService: UserService,
     private readonly documentService: DocumentService,
+    private readonly aiAgentService: AiAgentService,
   ) {}
   async classList(queries: ClassQueries): Promise<Class[]> {
     const { order, search, page = 1, orderBy, rowsPerPage } = queries;
@@ -237,20 +239,33 @@ export class ClassListService {
         },
         t,
       );
-      return await this.databaseService.insertOne<{ id: string }>({
-        table: 'course_material',
-        data: {
-          description: body.description,
-          duration: body.duration,
-          keyPoints: body.keyPoints,
-          title: body.title,
-          videoUrl: body.videoUrl,
-          class_id: id,
-          documentId: documentId,
+      const courseMateri = await this.databaseService.insertOne<{ id: string }>(
+        {
+          table: 'course_material',
+          data: {
+            description: body.description,
+            duration: body.duration,
+            keyPoints: body.keyPoints,
+            title: body.title,
+            videoUrl: body.videoUrl,
+            class_id: id,
+            documentId: documentId,
+          },
+          returning: ['id'],
+          transaction: t,
         },
-        returning: ['id'],
-        transaction: t,
-      });
+      );
+      this.aiAgentService.sendKnowledge(
+        {
+          title: body.title,
+          description: body.description,
+          type: 'video',
+          document: body.videoUrl,
+        },
+        documentId || '',
+        courseMateri?.id,
+      );
+      return courseMateri?.id || '';
     });
   }
   async updateCourseMateri(
