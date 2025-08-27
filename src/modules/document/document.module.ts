@@ -9,5 +9,6 @@ import { AiAgentModule } from '../aiagent/aiagent.module';
   providers: [DocumentService],
   controllers: [DocumentController],
   imports: [StorageModule, UserModule, AiAgentModule],
+  exports: [DocumentService],
 })
 export class DocumentModule {}

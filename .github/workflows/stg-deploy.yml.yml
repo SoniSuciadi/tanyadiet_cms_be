@@ -1,12 +1,12 @@
-name: Build & Deploy Prod
+name: Build & Deploy Staging
 
 concurrency:
-  group: prod-deploy
+  group: stg-deploy
   cancel-in-progress: true
 
 on:
   push:
-    branches: ['production']
+    branches: ['staging']
 
 jobs:
   build-and-deploy:
@@ -51,5 +51,5 @@ jobs:
         uses: caprover/deploy-from-github@main
         with:
           server: 'https://captain.this.prod.zenika.id'
-          app: 'server-admin-tanya-diet'
-          token: '${{ secrets.CAPROVER_PRODUCTION_TOKEN }}'
+          app: 'stg-server-admin-tanya-diet'
+          token: '${{ secrets.CAPROVER_STAGING_TOKEN }}'
