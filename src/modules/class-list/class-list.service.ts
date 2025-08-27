@@ -4,6 +4,7 @@ import {
   Class,
   ClassDetail,
   LiveSession,
+  Material,
   Participant,
 } from './class.response.dto';
 import {
@@ -14,12 +15,16 @@ import {
 } from './class.dto';
 import { UserService } from '../user/user.service';
 import { GetDataQueryDto } from 'src/dto/queriesList.dto';
+import { DocumentService } from '../document/document.service';
+import pgPromise from 'pg-promise';
+import pg from 'pg-promise/typescript/pg-subset';
 
 @Injectable()
 export class ClassListService {
   constructor(
     private readonly databaseService: DatabaseService,
     private readonly userService: UserService,
+    private readonly documentService: DocumentService,
   ) {}
   async classList(queries: ClassQueries): Promise<Class[]> {
     const { order, search, page = 1, orderBy, rowsPerPage } = queries;
@@ -222,33 +227,72 @@ export class ClassListService {
     return data;
   }
   async createCourseMateri(body: CreateCourseMateri, id: string) {
-    return await this.databaseService.insertOne<{ id: string }>({
-      table: 'course_material',
-      data: {
-        description: body.description,
-        duration: body.duration,
-        keyPoints: body.keyPoints,
-        title: body.title,
-        videoUrl: body.videoUrl,
-        class_id: id,
-      },
-      returning: ['id'],
+    await this.databaseService.db.tx(async (t) => {
+      const documentId = await this.documentService.createDocument(
+        {
+          title: body.title,
+          description: body.description,
+          type: 'video',
+          document: body.videoUrl,
+        },
+        t,
+      );
+      return await this.databaseService.insertOne<{ id: string }>({
+        table: 'course_material',
+        data: {
+          description: body.description,
+          duration: body.duration,
+          keyPoints: body.keyPoints,
+          title: body.title,
+          videoUrl: body.videoUrl,
+          class_id: id,
+          documentId: documentId,
+        },
+        returning: ['id'],
+        transaction: t,
+      });
     });
   }
-  async updateCourseMateri(body: CreateCourseMateri, id: string) {
-    await this.databaseService.updateOne<{ id: string }>({
-      table: 'course_material',
-      data: {
-        description: body.description,
-        duration: body.duration,
-        keyPoints: body.keyPoints,
-        title: body.title,
-        videoUrl: body.videoUrl,
-      },
-      where: {
-        id,
-      },
-      returning: ['id'],
+  async updateCourseMateri(
+    body: CreateCourseMateri,
+    id: string,
+    newVid: boolean,
+  ) {
+    const updatePayload: Omit<CreateCourseMateri, 'classTitle'> & {
+      documentId?: string;
+    } = {
+      description: body.description,
+      duration: body.duration,
+      keyPoints: body.keyPoints,
+      title: body.title,
+      videoUrl: body.videoUrl,
+    };
+    await this.databaseService.db.tx(async (t) => {
+      if (newVid) {
+        const existingDoc = await this.getClassMateriDetail(id, t);
+        await this.documentService.deleteDocument(
+          existingDoc?.documentId || '',
+        );
+        const documentId = await this.documentService.createDocument(
+          {
+            title: body.title,
+            description: body.description,
+            type: 'video',
+            document: body.videoUrl,
+          },
+          t,
+        );
+        updatePayload.documentId = documentId;
+      }
+      await this.databaseService.updateOne<{ id: string }>({
+        table: 'course_material',
+        data: updatePayload,
+        where: {
+          id,
+        },
+        transaction: t,
+        returning: ['id'],
+      });
     });
   }
   async getClassMateri(
@@ -282,7 +326,10 @@ export class ClassListService {
     });
     return data;
   }
-  async getClassMateriDetail(id: string): Promise<Participant | null> {
+  async getClassMateriDetail(
+    id: string,
+    tx?: pgPromise.ITask<pg.IClient> & pg.IClient,
+  ): Promise<Material | null> {
     const whereQuery: string[] = [`WHERE deleted_at IS NULL`, 'id=$<id>'];
 
     const q = `
@@ -293,15 +340,19 @@ export class ClassListService {
           description,
           video_url AS "videoUrl",
           duration,
-          key_points AS "keyPoints"
+          key_points AS "keyPoints",
+          document_id AS "documentId"
         FROM
           course_material
         ${whereQuery.join(' AND ')}
         ORDER BY created_at DESC
         `;
-    const data = await this.databaseService.db.oneOrNone<Participant>(q, {
-      id,
-    });
+    const data = await (tx ? tx : this.databaseService.db).oneOrNone<Material>(
+      q,
+      {
+        id,
+      },
+    );
     return data;
   }
 }

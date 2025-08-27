@@ -161,6 +161,7 @@ export class ClassListController {
       );
       body.videoUrl = uploadFile;
     }
+
     const data = await this.classListService.createCourseMateri(body, id);
     return {
       message: 'Berhasil menambahkan course materi',
@@ -181,7 +182,7 @@ export class ClassListController {
       );
       body.videoUrl = uploadFile;
     }
-    await this.classListService.updateCourseMateri(body, materiId);
+    await this.classListService.updateCourseMateri(body, materiId, !!video);
     return {
       message: 'Berhasil mengubah course materi',
     };

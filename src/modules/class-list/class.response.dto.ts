@@ -64,4 +64,5 @@ export interface Material {
   videoUrl: UploadResult;
   duration: string;
   keyPoints: string[];
+  documentId: string;
 }

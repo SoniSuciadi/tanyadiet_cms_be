@@ -4,6 +4,8 @@ import { DatabaseService } from 'src/common/database/database.service';
 import { Document } from './document.response.dto';
 import { UserService } from '../user/user.service';
 import { AiAgentService } from '../aiagent/aiagent.service';
+import pgPromise from 'pg-promise';
+import pg from 'pg-promise/typescript/pg-subset';
 
 @Injectable()
 export class DocumentService {
@@ -52,7 +54,10 @@ export class DocumentService {
     return data;
   }
 
-  async createDocument(body: CreateDocumentDto) {
+  async createDocument(
+    body: CreateDocumentDto,
+    tx?: pgPromise.ITask<pg.IClient> & pg.IClient,
+  ) {
     const data = await this.databaseService.insertOne<{ id: string }>({
       table: 'documents',
       data: {
@@ -60,6 +65,7 @@ export class DocumentService {
         document: JSON.stringify(body.document),
       },
       returning: ['id'],
+      transaction: tx,
     });
     await this.aiAgentService.sendKnowledge(body, data?.id);
     return data?.id || '';
