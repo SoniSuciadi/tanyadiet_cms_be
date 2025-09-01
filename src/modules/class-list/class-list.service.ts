@@ -17,9 +17,8 @@ import {
 import { UserService } from '../user/user.service';
 import { GetDataQueryDto } from 'src/dto/queriesList.dto';
 import { DocumentService } from '../document/document.service';
-import pgPromise from 'pg-promise';
-import pg from 'pg-promise/typescript/pg-subset';
 import { AiAgentService } from '../aiagent/aiagent.service';
+import { DbTx } from 'src/common/database/database.type';
 
 @Injectable()
 export class ClassListService {
@@ -108,7 +107,7 @@ export class ClassListService {
       table: 'classes',
       data: {
         status: body.status,
-        publish_until: body.status === 'published' ? body.date : null,
+        publish_until: body.status === 'active' ? body.date : null,
       },
       where: { id },
     });
@@ -333,7 +332,7 @@ export class ClassListService {
         FROM
           course_material
         ${whereQuery.join(' AND ')}
-        ORDER BY created_at DESC
+        ORDER BY created_at ASC
         `;
     q += `LIMIT $<rowsPerPage> OFFSET $<offset>`;
     const data = await this.databaseService.db.manyOrNone<Participant>(q, {
@@ -343,10 +342,7 @@ export class ClassListService {
     });
     return data;
   }
-  async getClassMateriDetail(
-    id: string,
-    tx?: pgPromise.ITask<pg.IClient> & pg.IClient,
-  ): Promise<Material | null> {
+  async getClassMateriDetail(id: string, tx?: DbTx): Promise<Material | null> {
     const whereQuery: string[] = [`WHERE deleted_at IS NULL`, 'id=$<id>'];
 
     const q = `
@@ -362,7 +358,7 @@ export class ClassListService {
         FROM
           course_material
         ${whereQuery.join(' AND ')}
-        ORDER BY created_at DESC
+        ORDER BY created_at ASC
         `;
     const data = await (tx ? tx : this.databaseService.db).oneOrNone<Material>(
       q,

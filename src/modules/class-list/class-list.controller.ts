@@ -83,6 +83,7 @@ export class ClassListController {
       },
     };
   }
+
   @Get(':id')
   async getClassById(@Param('id') id: string) {
     const data = await this.classListService.getClassById(id);

@@ -3,8 +3,7 @@ import { CreateDocumentDto, DocumentQueries } from './document.dto';
 import { DatabaseService } from 'src/common/database/database.service';
 import { Document } from './document.response.dto';
 import { UserService } from '../user/user.service';
-import pgPromise from 'pg-promise';
-import pg from 'pg-promise/typescript/pg-subset';
+import { DbTx } from 'src/common/database/database.type';
 
 @Injectable()
 export class DocumentService {
@@ -54,10 +53,7 @@ export class DocumentService {
     return data;
   }
 
-  async createDocument(
-    body: CreateDocumentDto,
-    tx?: pgPromise.ITask<pg.IClient> & pg.IClient,
-  ): Promise<string> {
+  async createDocument(body: CreateDocumentDto, tx?: DbTx): Promise<string> {
     const data = await this.databaseService.insertOne<{ id: string }>({
       table: 'documents',
       data: {
@@ -88,10 +84,7 @@ export class DocumentService {
     );
     return data || null;
   }
-  async deleteDocument(
-    id: string,
-    tx?: pgPromise.ITask<pg.IClient> & pg.IClient,
-  ) {
+  async deleteDocument(id: string, tx?: DbTx) {
     await this.databaseService.updateOne<{ id: string }>({
       table: 'documents',
       data: {
