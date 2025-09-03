@@ -12,12 +12,13 @@ import {
   CreateClassDto,
   CreateCourseMateri,
   CreateLiveSession,
+  UpdateStatus,
 } from './class.dto';
 import { UserService } from '../user/user.service';
 import { GetDataQueryDto } from 'src/dto/queriesList.dto';
 import { DocumentService } from '../document/document.service';
-import pgPromise from 'pg-promise';
-import pg from 'pg-promise/typescript/pg-subset';
+import { AiAgentService } from '../aiagent/aiagent.service';
+import { DbTx } from 'src/common/database/database.type';
 
 @Injectable()
 export class ClassListService {
@@ -25,6 +26,7 @@ export class ClassListService {
     private readonly databaseService: DatabaseService,
     private readonly userService: UserService,
     private readonly documentService: DocumentService,
+    private readonly aiAgentService: AiAgentService,
   ) {}
   async classList(queries: ClassQueries): Promise<Class[]> {
     const { order, search, page = 1, orderBy, rowsPerPage } = queries;
@@ -100,13 +102,12 @@ export class ClassListService {
       returning: ['id'],
     });
   }
-  async updateStatus(status: string, id: string) {
+  async updateStatus(body: UpdateStatus, id: string) {
     await this.databaseService.updateOne<{ id: string }>({
       table: 'classes',
       data: {
-        status,
-        deleted_at: status === 'deleted' ? new Date() : null,
-        deleted_by: status === 'deleted' ? this.userService.get().id : null,
+        status: body.status,
+        publish_until: body.status === 'publish' ? body.date : null,
       },
       where: { id },
     });
@@ -127,6 +128,8 @@ export class ClassListService {
       c.description,
       c.what_you_will_learn AS "whatYouWillLearn",
       c.schedule,
+      c.status,
+      c.publish_until AS "publishUntil",
       count(
         CASE WHEN oc.payment_status = 'settlement' THEN
           oc.id
@@ -237,20 +240,33 @@ export class ClassListService {
         },
         t,
       );
-      return await this.databaseService.insertOne<{ id: string }>({
-        table: 'course_material',
-        data: {
-          description: body.description,
-          duration: body.duration,
-          keyPoints: body.keyPoints,
-          title: body.title,
-          videoUrl: body.videoUrl,
-          class_id: id,
-          documentId: documentId,
+      const courseMateri = await this.databaseService.insertOne<{ id: string }>(
+        {
+          table: 'course_material',
+          data: {
+            description: body.description,
+            duration: body.duration,
+            keyPoints: body.keyPoints,
+            title: body.title,
+            videoUrl: body.videoUrl,
+            class_id: id,
+            documentId: documentId,
+          },
+          returning: ['id'],
+          transaction: t,
         },
-        returning: ['id'],
-        transaction: t,
-      });
+      );
+      this.aiAgentService.sendKnowledge(
+        {
+          title: body.title,
+          description: body.description,
+          type: 'video',
+          document: body.videoUrl,
+        },
+        documentId || '',
+        courseMateri?.id,
+      );
+      return courseMateri?.id || '';
     });
   }
   async updateCourseMateri(
@@ -316,7 +332,7 @@ export class ClassListService {
         FROM
           course_material
         ${whereQuery.join(' AND ')}
-        ORDER BY created_at DESC
+        ORDER BY created_at ASC
         `;
     q += `LIMIT $<rowsPerPage> OFFSET $<offset>`;
     const data = await this.databaseService.db.manyOrNone<Participant>(q, {
@@ -326,10 +342,7 @@ export class ClassListService {
     });
     return data;
   }
-  async getClassMateriDetail(
-    id: string,
-    tx?: pgPromise.ITask<pg.IClient> & pg.IClient,
-  ): Promise<Material | null> {
+  async getClassMateriDetail(id: string, tx?: DbTx): Promise<Material | null> {
     const whereQuery: string[] = [`WHERE deleted_at IS NULL`, 'id=$<id>'];
 
     const q = `
@@ -345,7 +358,7 @@ export class ClassListService {
         FROM
           course_material
         ${whereQuery.join(' AND ')}
-        ORDER BY created_at DESC
+        ORDER BY created_at ASC
         `;
     const data = await (tx ? tx : this.databaseService.db).oneOrNone<Material>(
       q,
@@ -354,5 +367,11 @@ export class ClassListService {
       },
     );
     return data;
+  }
+  async getCategoryList(): Promise<string[]> {
+    const q = `SELECT DISTINCT category FROM classes ORDER BY category ASC`;
+    const data = await this.databaseService.db.manyOrNone(q);
+
+    return data.map((d) => d.category);
   }
 }

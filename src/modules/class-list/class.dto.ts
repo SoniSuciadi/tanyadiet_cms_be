@@ -119,3 +119,13 @@ export class CreateCourseMateri {
   @IsNotEmpty()
   keyPoints: string[];
 }
+
+export class UpdateStatus {
+  @IsString()
+  @IsNotEmpty()
+  status: string;
+
+  @IsString()
+  @IsOptional()
+  date: string;
+}

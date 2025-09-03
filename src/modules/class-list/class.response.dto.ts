@@ -33,6 +33,8 @@ export interface ClassDetail {
   schedule: string;
   students?: number;
   rating?: number;
+  publishUntil?: string;
+  status: string;
 }
 export interface CreateLiveSession {
   title: string;

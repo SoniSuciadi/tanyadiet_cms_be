@@ -2,7 +2,7 @@ import { Module, RequestMethod } from '@nestjs/common';
 import { AuthModule } from './modules/auth/auth.module';
 import { APP_FILTER, APP_INTERCEPTOR, MiddlewareBuilder } from '@nestjs/core';
 import { LoggingInterceptor } from './common/interceptors/logging.interceptor';
-import { HandleError } from './common/interceptors/handleError.interceptor';
+
 import { AuthenticationMiddleware } from './common/middlewares/authentication.middleware';
 import { UserModule } from './modules/user/user.module';
 import { DatabaseModule } from './common/database/database.module';
@@ -14,6 +14,7 @@ import { DocumentModule } from './modules/document/document.module';
 import { OrderModule } from './modules/order/order.module';
 import { StorageModule } from './modules/storage/storage.module';
 import { AiAgentModule } from './modules/aiagent/aiagent.module';
+import { HandleHttpError } from './common/interceptors/handleError.interceptor';
 
 @Module({
   imports: [
@@ -36,7 +37,7 @@ import { AiAgentModule } from './modules/aiagent/aiagent.module';
     },
     {
       provide: APP_FILTER,
-      useClass: HandleError,
+      useClass: HandleHttpError,
     },
   ],
 })
@@ -60,6 +61,14 @@ export class AppModule {
         {
           path: 'auth/logout',
           method: RequestMethod.GET,
+        },
+        {
+          path: 'aiagent/course-materi-test',
+          method: RequestMethod.POST,
+        },
+        {
+          path: 'aiagent/document-embedding-status/:id',
+          method: RequestMethod.PATCH,
         },
         'stream',
       )

@@ -4,13 +4,13 @@ import * as compression from 'compression';
 import * as cookieParser from 'cookie-parser';
 
 import * as bodyParser from 'body-parser';
-import { HandleError } from './common/interceptors/handleError.interceptor';
 import * as dotenv from 'dotenv';
 import { AppModule } from './app.module';
 import { DatabaseService } from './common/database/database.service';
 import * as dayjs from 'dayjs';
 import * as utc from 'dayjs/plugin/utc';
 import 'dayjs/locale/id';
+import { HandleHttpError } from './common/interceptors/handleError.interceptor';
 // init time
 dotenv.config();
 dayjs.extend(utc);
@@ -34,7 +34,7 @@ class Application {
   }
 
   private setupInterceptorsAndFilters() {
-    this.app.useGlobalFilters(new HandleError());
+    this.app.useGlobalFilters(new HandleHttpError());
   }
   private async start() {
     await this.app.listen(this.PORT, () => {
