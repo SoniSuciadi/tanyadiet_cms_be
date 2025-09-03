@@ -61,6 +61,14 @@ export class AppModule {
           path: 'auth/logout',
           method: RequestMethod.GET,
         },
+        {
+          path: 'aiagent/course-materi-test',
+          method: RequestMethod.POST,
+        },
+        {
+          path: 'aiagent/document-embedding-status/:id',
+          method: RequestMethod.PATCH,
+        },
         'stream',
       )
       .forRoutes('*');

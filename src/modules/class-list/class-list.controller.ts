@@ -1,7 +1,6 @@
 import {
   Body,
   Controller,
-  Delete,
   Get,
   Param,
   Patch,
@@ -11,9 +10,16 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { ClassListService } from './class-list.service';
-import { ClassQueries, CreateClassDto } from './class.dto';
+import {
+  ClassQueries,
+  CreateClassDto,
+  CreateCourseMateri,
+  CreateLiveSession,
+  UpdateStatus,
+} from './class.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from '../storage/storage.service';
+import { GetDataQueryDto } from 'src/dto/queriesList.dto';
 
 @Controller('class-list')
 export class ClassListController {
@@ -77,21 +83,133 @@ export class ClassListController {
       },
     };
   }
-  @Delete(':id')
-  async deleteClass(@Param('id') id: string) {
-    await this.classListService.updateStatus('deleted', id);
-    return {
-      message: 'Berhasil menghapus data class',
-      data: {
-        id,
-      },
-    };
-  }
+
   @Get(':id')
   async getClassById(@Param('id') id: string) {
     const data = await this.classListService.getClassById(id);
     return {
       message: 'Berhasil mengambil data class',
+      data,
+    };
+  }
+  @Post(':id/live-session')
+  async createLiveSession(
+    @Param('id') id: string,
+    @Body() body: CreateLiveSession,
+  ) {
+    const data = await this.classListService.createLiveSession(body, id);
+    return {
+      message: 'Berhasil menambahkan live session',
+      data,
+    };
+  }
+  @Patch(':id/live-session/:liveSessionId')
+  async updateLiveSession(
+    @Param('liveSessionId') liveSessionId: string,
+    @Body() body: CreateLiveSession,
+  ) {
+    await this.classListService.updateLiveSession(body, liveSessionId);
+    return {
+      message: 'Berhasil mengubah live session',
+    };
+  }
+  @Get(':id/live-session')
+  async getLiveSession(@Param('id') id: string) {
+    const data = await this.classListService.getLiveSession(id);
+    return {
+      message: 'Berhasil mengambil live session',
+      data,
+    };
+  }
+  @Get(':id/participant')
+  async getParticipant(
+    @Param('id') id: string,
+    @Query() queries: GetDataQueryDto,
+  ) {
+    const data = await this.classListService.getClassParticipant(id, queries);
+    const objResult = {
+      totalItems: +data?.[0]?.count,
+      page: +queries.page,
+      perPage: queries.rowsPerPage,
+      items: data,
+    };
+    return {
+      message: 'Berhasil mengambil participant',
+      data: objResult,
+    };
+  }
+  @Post(':id/course-materi')
+  @UseInterceptors(FileInterceptor('video'))
+  async createCourseMateri(
+    @Param('id') id: string,
+    @Body() body: CreateCourseMateri,
+    @UploadedFile() video: Express.Multer.File,
+  ) {
+    if (video) {
+      const uploadFile = await this.storageService.uploadFile(
+        video,
+        `/class/${body.classTitle}/material`,
+      );
+      body.videoUrl = uploadFile;
+    }
+
+    const data = await this.classListService.createCourseMateri(body, id);
+    return {
+      message: 'Berhasil menambahkan course materi',
+      data,
+    };
+  }
+  @Patch(':id/course-materi/:materiId')
+  @UseInterceptors(FileInterceptor('video'))
+  async updateCourseMateri(
+    @Param('materiId') materiId: string,
+    @Body() body: CreateCourseMateri,
+    @UploadedFile() video: Express.Multer.File,
+  ) {
+    if (video) {
+      const uploadFile = await this.storageService.uploadFile(
+        video,
+        `/class/${body.classTitle}/material`,
+      );
+      body.videoUrl = uploadFile;
+    }
+    await this.classListService.updateCourseMateri(body, materiId, !!video);
+    return {
+      message: 'Berhasil mengubah course materi',
+    };
+  }
+  @Get(':id/course-materi')
+  async getCourseMateri(
+    @Param('id') id: string,
+    @Query() queries: GetDataQueryDto,
+  ) {
+    const data = await this.classListService.getClassMateri(id, queries);
+    const objResult = {
+      totalItems: +data?.[0]?.count,
+      page: +queries.page,
+      perPage: queries.rowsPerPage,
+      items: data,
+    };
+    return {
+      message: 'Berhasil mengubah live session',
+      data: objResult,
+    };
+  }
+  @Get(':id/course-materi/:materiId')
+  async getCourseMateriDetail(@Param('materiId') materiId: string) {
+    const data = await this.classListService.getClassMateriDetail(materiId);
+
+    return {
+      message: 'Berhasil mengambil detail materi',
+      data,
+    };
+  }
+
+  @Patch(':id/status')
+  async updateStatus(@Param('id') id: string, @Body() body: UpdateStatus) {
+    const data = await this.classListService.updateStatus(body, id);
+    return {
+      message: 'Berhasil mengubah status class',
       data,
     };
   }

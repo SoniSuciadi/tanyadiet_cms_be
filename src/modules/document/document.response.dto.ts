@@ -9,4 +9,5 @@ export interface Document {
   link: string;
   document: UploadResult;
   uploadDate: string;
+  classId?: string;
 }

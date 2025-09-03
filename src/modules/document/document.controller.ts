@@ -13,12 +13,16 @@ import { DocumentService } from './document.service';
 import { CreateDocumentDto, DocumentQueries } from './document.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { StorageService } from '../storage/storage.service';
+import { AiAgentService } from '../aiagent/aiagent.service';
+import { DatabaseService } from 'src/common/database/database.service';
 
 @Controller('document')
 export class DocumentController {
   constructor(
     private documentService: DocumentService,
     private readonly storageService: StorageService,
+    private readonly aiAgentService: AiAgentService,
+    private readonly databaseService: DatabaseService,
   ) {}
 
   @Get('')
@@ -56,12 +60,22 @@ export class DocumentController {
       );
       body.document = uploadFile;
     }
-    return this.documentService.createDocument(body);
+
+    const docId = await this.documentService.createDocument(body);
+    this.aiAgentService.sendKnowledge(body, docId || '');
+    return {
+      message: 'Berhasil menambahkan document',
+      data: docId,
+    };
   }
 
   @Delete(':id')
   async deleteDocument(@Param('id') id: string) {
-    await this.documentService.deleteDocument(id);
+    await this.databaseService.db.tx(async (t) => {
+      await this.documentService.deleteDocument(id, t);
+      await this.aiAgentService.deleteKnowledge(id);
+    });
+
     return {
       message: 'Berhasil menghapus document',
     };
