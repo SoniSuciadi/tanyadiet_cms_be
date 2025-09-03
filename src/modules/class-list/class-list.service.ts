@@ -107,7 +107,7 @@ export class ClassListService {
       table: 'classes',
       data: {
         status: body.status,
-        publish_until: body.status === 'active' ? body.date : null,
+        publish_until: body.status === 'publish' ? body.date : null,
       },
       where: { id },
     });
@@ -367,5 +367,11 @@ export class ClassListService {
       },
     );
     return data;
+  }
+  async getCategoryList(): Promise<string[]> {
+    const q = `SELECT DISTINCT category FROM classes ORDER BY category ASC`;
+    const data = await this.databaseService.db.manyOrNone(q);
+
+    return data.map((d) => d.category);
   }
 }

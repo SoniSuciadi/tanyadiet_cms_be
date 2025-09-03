@@ -1,30 +1,42 @@
 import { Controller, Get, Param, Query } from '@nestjs/common';
 import { CustomerQueries } from './customer.dto';
 import { CustomerService } from './customer.service';
+import { catchError } from 'src/common/utils/catchError';
 
 @Controller('customer')
 export class CustomerController {
   constructor(private readonly customerService: CustomerService) {}
+
   @Get('')
   async getCustomerList(@Query() customerQueries: CustomerQueries) {
-    const data = await this.customerService.customerList(customerQueries);
-    const objResult = {
-      totalItems: +data?.[0]?.count,
-      page: +customerQueries.page,
-      perPage: customerQueries.rowsPerPage,
-      items: data,
-    };
-    return {
-      message: 'Berhasil mengambil data customer',
-      data: objResult,
-    };
+    try {
+      const data = await this.customerService.customerList(customerQueries);
+      const objResult = {
+        totalItems: +data?.[0]?.count,
+        page: +customerQueries.page,
+        perPage: customerQueries.rowsPerPage,
+        items: data,
+      };
+
+      return {
+        message: 'Berhasil mengambil daftar customer',
+        data: objResult,
+      };
+    } catch (error) {
+      catchError(error, 'Gagal mengambil daftar customer');
+    }
   }
+
   @Get('/:id')
   async getCustomerDetail(@Param('id') id: string) {
-    const data = await this.customerService.customerDetail(id);
-    return {
-      message: 'Berhasil mengambil data customer',
-      data,
-    };
+    try {
+      const data = await this.customerService.customerDetail(id);
+      return {
+        message: 'Berhasil mengambil detail customer',
+        data,
+      };
+    } catch (error) {
+      catchError(error, `Gagal mengambil detail customer dengan ID ${id}`);
+    }
   }
 }
